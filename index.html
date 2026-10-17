@@ -16,8 +16,48 @@
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
 
+    <!-- LOGIN SCREEN OVERLAY -->
+    <div id="login-screen" class="fixed inset-0 bg-emerald-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl max-w-md w-full p-8 shadow-2xl space-y-6 border border-emerald-100">
+            <div class="text-center space-y-2">
+                <div class="inline-flex bg-emerald-100 text-emerald-700 p-3 rounded-2xl text-2xl font-bold shadow-inner">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800">E-BK SMA Azmanawadi</h2>
+                <div class="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-xl text-xs font-semibold leading-relaxed">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bersifat Rahasia - Hanya diakses oleh BKA SMA Azmanawadi Kotaraja!
+                </div>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Username:</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa-solid fa-user"></i>
+                        </span>
+                        <input type="text" id="login-username" required placeholder="Masukkan username" class="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Password:</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa-solid fa-lock"></i>
+                        </span>
+                        <input type="password" id="login-password" required placeholder="Masukkan password" class="w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                </div>
+                <p id="login-error" class="text-xs text-red-500 text-center font-medium hidden">Username atau password salah!</p>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-semibold text-sm transition shadow-md">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Masuk Sistem
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Top Navbar -->
-    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
                 <div class="bg-white text-emerald-700 p-2 rounded-lg font-bold shadow">
@@ -29,11 +69,14 @@
                 </div>
             </div>
             <div class="flex items-center space-x-3">
-                <span id="firebase-status" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200 border border-emerald-600">
+                <span id="firebase-status" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200 border border-emerald-600 hidden sm:inline-block">
                     <i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1 animate-pulse"></i> Menghubungkan Firebase...
                 </span>
-                <button onclick="switchTab('dashboard')" class="bg-emerald-600 hover:bg-emerald-800 px-3 py-1.5 rounded-lg text-sm font-medium transition">
-                    <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard
+                <span id="user-badge" class="text-xs bg-emerald-800 px-3 py-1.5 rounded-lg text-emerald-100 font-medium border border-emerald-600">
+                    <i class="fa-solid fa-user-shield mr-1"></i> susilawati
+                </span>
+                <button onclick="handleLogout()" class="bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm" title="Keluar">
+                    <i class="fa-solid fa-power-off"></i>
                 </button>
             </div>
         </div>
@@ -356,10 +399,40 @@
         </div>
     </div>
 
-    <!-- Firebase Realtime Database SDK Imports -->
+    <!-- Firebase Realtime Database SDK Imports & Script Logics -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, push, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // Cek Sesi Login saat halaman dimuat
+        window.addEventListener('DOMContentLoaded', () => {
+            const isLoggedIn = sessionStorage.getItem('bk_logged_in');
+            if (isLoggedIn === 'true') {
+                document.getElementById('login-screen').classList.add('hidden');
+            }
+        });
+
+        window.handleLogin = function(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-username').value.trim();
+            const p = document.getElementById('login-password').value.trim();
+            const errEl = document.getElementById('login-error');
+
+            if (u === 'susilawati' && p === 'bk2026') {
+                sessionStorage.setItem('bk_logged_in', 'true');
+                document.getElementById('login-screen').classList.add('hidden');
+                errEl.classList.add('hidden');
+            } else {
+                errEl.classList.remove('hidden');
+            }
+        }
+
+        window.handleLogout = function() {
+            sessionStorage.removeItem('bk_logged_in');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-form').reset();
+            document.getElementById('login-error').classList.add('hidden');
+        }
 
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
@@ -444,12 +517,14 @@
                     schedules.push({ id: key, ...data[key] });
                 });
             } else {
-                // Inisialisasi default schedule di Realtime DB
                 defaultSchedules.forEach(item => {
                     push(ref(db, 'schedules'), item);
                 });
             }
-            document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Realtime DB Terhubung';
+            const statusEl = document.getElementById('firebase-status');
+            if(statusEl) {
+                statusEl.innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Realtime DB Terhubung';
+            }
             renderAll();
         });
 
@@ -479,8 +554,10 @@
 
         function populateStudentDropdowns() {
             const options = studentsList.map(s => `<option value="${s.name} (${s.grade})">${s.name} - ${s.grade}</option>`).join('');
-            document.getElementById('session-student').innerHTML = options;
-            document.getElementById('schedule-student').innerHTML = options;
+            const sStudent = document.getElementById('session-student');
+            const scStudent = document.getElementById('schedule-student');
+            if(sStudent) sStudent.innerHTML = options;
+            if(scStudent) scStudent.innerHTML = options;
         }
 
         function renderDashboard() {
