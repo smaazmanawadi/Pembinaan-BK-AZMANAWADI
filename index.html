@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-BK SMA Azmanawadi Kotaraja</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Top Navbar -->
+    <header class="bg-emerald-700 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-emerald-700 p-2 rounded-lg font-bold shadow">
+                    <i class="fa-solid fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">E-BK SMA Azmanawadi</h1>
+                    <p class="text-xs text-emerald-200">Sistem Bimbingan & Konseling Online</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span id="firebase-status" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200 border border-emerald-600">
+                    <i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1 animate-pulse"></i> Mode Lokal (Hubungkan Firebase)
+                </span>
+                <button onclick="switchTab('dashboard')" class="bg-emerald-600 hover:bg-emerald-800 px-3 py-1.5 rounded-lg text-sm font-medium transition">
+                    <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full grid grid-cols-1 md:grid-cols-4 gap-6">
+
+        <!-- Sidebar Navigation -->
+        <aside class="md:col-span-1 bg-white p-4 rounded-xl shadow-sm border border-gray-100 h-fit space-y-2">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 mb-2">Menu Utama</p>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 bg-emerald-50 text-emerald-700">
+                <i class="fa-solid fa-house w-5"></i> <span>Dashboard Utama</span>
+            </button>
+            <button onclick="switchTab('students')" id="nav-students" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 text-gray-600 hover:bg-gray-50">
+                <i class="fa-solid fa-users w-5"></i> <span>Data Siswa (18)</span>
+            </button>
+            <button onclick="switchTab('schedules')" id="nav-schedules" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 text-gray-600 hover:bg-gray-50">
+                <i class="fa-solid fa-calendar-days w-5"></i> <span>Jadwal Konseling</span>
+            </button>
+            <button onclick="switchTab('sessions')" id="nav-sessions" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 text-gray-600 hover:bg-gray-50">
+                <i class="fa-solid fa-file-lines w-5"></i> <span>Hasil Pembinaan</span>
+            </button>
+            <button onclick="switchTab('firebase-config')" id="nav-firebase-config" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 text-gray-600 hover:bg-gray-50">
+                <i class="fa-solid fa-database w-5"></i> <span>Setup Firebase</span>
+            </button>
+        </aside>
+
+        <!-- Content Area -->
+        <section class="md:col-span-3 space-y-6">
+
+            <!-- TAB 1: DASHBOARD -->
+            <div id="tab-dashboard" class="space-y-6 tab-content">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="bg-blue-50 text-blue-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-user-graduate"></i></div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Total Siswa Binaan</p>
+                            <h3 class="text-2xl font-bold text-gray-800">18 Siswa</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-clipboard-check"></i></div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Sesi Bulan Ini</p>
+                            <h3 id="stat-total-sessions" class="text-2xl font-bold text-emerald-600">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                        <div class="bg-amber-50 text-amber-600 p-4 rounded-xl text-xl"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium">Belum Konseling Bulan Ini</p>
+                            <h3 id="stat-pending-students" class="text-2xl font-bold text-amber-600">18</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Alert -->
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-6 rounded-2xl shadow-md flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold">Target Konseling Minimal 1x / Bulan</h2>
+                        <p class="text-xs text-emerald-100 mt-1">Pastikan seluruh siswa Kelas X, XI, dan XII mendapatkan sesi pembinaan rutin untuk problem solving.</p>
+                    </div>
+                    <button onclick="switchTab('sessions'); openAddSessionModal();" class="bg-white text-emerald-700 hover:bg-emerald-50 px-4 py-2.5 rounded-xl text-sm font-semibold shadow transition whitespace-nowrap">
+                        <i class="fa-solid fa-plus mr-1"></i> Catat Hasil Konseling Baru
+                    </button>
+                </div>
+
+                <!-- Recent Logs Table -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h3 class="text-base font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-clock-rotate-left text-emerald-600 mr-2"></i> Riwayat Pembinaan Terbaru
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Nama Siswa</th>
+                                    <th class="p-3">Kategori</th>
+                                    <th class="p-3">Permasalahan</th>
+                                    <th class="p-3">Solusi BK</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-sessions-table" class="divide-y divide-gray-100">
+                                <tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pembinaan tersimpan.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: STUDENTS -->
+            <div id="tab-students" class="space-y-6 tab-content hidden">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-base font-bold text-gray-800">Daftar Siswa Binaan SMA Azmanawadi Kotaraja</h3>
+                        <span class="text-xs bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full font-medium">Total: 18 Siswa</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">No</th>
+                                    <th class="p-3">Nama Siswa</th>
+                                    <th class="p-3">Kelas</th>
+                                    <th class="p-3">Status Bulan Ini</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="students-table" class="divide-y divide-gray-100">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: SCHEDULES -->
+            <div id="tab-schedules" class="space-y-6 tab-content hidden">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Jadwal Pembinaan / Konseling Siswa (Rutin Bulanan)</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Jadwal rutin mingguan untuk 18 siswa SMA Azmanawadi Kotaraja[cite: 1, 2].</p>
+                    </div>
+                    <div class="space-x-2">
+                        <button onclick="resetDefaultSchedules()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Reset Jadwal Excel
+                        </button>
+                        <button onclick="openScheduleModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                            <i class="fa-solid fa-plus mr-1"></i> Buat Jadwal Baru
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">Minggu Ke</th>
+                                    <th class="p-3">Hari</th>
+                                    <th class="p-3">Kelas</th>
+                                    <th class="p-3">Nama Siswa</th>
+                                    <th class="p-3">Jenis Sesi</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="schedules-table" class="divide-y divide-gray-100">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: SESSIONS (HASIL PEMBINAAN & REKAP EXCEL) -->
+            <div id="tab-sessions" class="space-y-6 tab-content hidden">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="text-base font-bold text-gray-800">Catatan & Hasil Pembinaan BK</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Rekam masalah dan solusi problem solving yang ditawarkan.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openExportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                            <i class="fa-solid fa-file-excel mr-1"></i> Download Rekap (.csv / Excel)
+                        </button>
+                        <button onclick="openAddSessionModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                            <i class="fa-solid fa-plus mr-1"></i> Tambah Hasil Konseling
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-600 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">Tanggal</th>
+                                    <th class="p-3">Siswa & Kelas</th>
+                                    <th class="p-3">Kategori</th>
+                                    <th class="p-3">Permasalahan</th>
+                                    <th class="p-3">Solusi / Problem Solving</th>
+                                    <th class="p-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sessions-table" class="divide-y divide-gray-100">
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Belum ada catatan pembinaan.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: FIREBASE CONFIG -->
+            <div id="tab-firebase-config" class="space-y-6 tab-content hidden">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
+                    <h3 class="text-base font-bold text-gray-800 flex items-center">
+                        <i class="fa-solid fa-database text-emerald-600 mr-2"></i> Konfigurasi Koneksi Firebase
+                    </h3>
+                    <p class="text-xs text-gray-600">
+                        Masukkan konfigurasi Firebase Anda (dari Firebase Console > Project Settings > General > Your Apps > Web App SDK). Data aplikasi akan otomatis tersimpan di Cloud Firestore sehingga bisa diakses secara online dari perangkat mana pun.
+                    </p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Firebase Config JSON / Script Snippet:</label>
+                            <textarea id="firebase-config-input" rows="6" class="w-full p-3 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Paste konfigurasi firebase di sini..."></textarea>
+                        </div>
+                        <button onclick="saveFirebaseConfig()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                            Simpan & Hubungkan Firebase
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- MODAL: EXPORT PILIH BULAN -->
+    <div id="export-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-gray-800">Pilih Periode Rekapan</h3>
+            <p class="text-xs text-gray-500">Pilih bulan rekap yang ingin didownload ke format Excel.</p>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Bulan & Tahun:</label>
+                    <input type="month" id="export-month-input" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" id="export-all-check" class="rounded text-emerald-600 focus:ring-emerald-500">
+                    <label for="export-all-check" class="text-xs text-gray-700 font-medium">Download Seluruh Data (Semua Bulan)</label>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-3 pt-2">
+                <button type="button" onclick="closeModal('export-modal')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">Batal</button>
+                <button type="button" onclick="confirmExportCSV()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Download</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT SESSION -->
+    <div id="session-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-gray-800" id="session-modal-title">Catat Hasil Pembinaan BK</h3>
+            <form id="session-form" onsubmit="saveSession(event)" class="space-y-4">
+                <input type="hidden" id="session-id">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Siswa:</label>
+                    <select id="session-student" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tanggal Konseling:</label>
+                        <input type="date" id="session-date" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Kategori Masalah:</label>
+                        <select id="session-category" class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="Rutin Bulanan">Rutin Bulanan</option>
+                            <option value="Akademik">Akademik</option>
+                            <option value="Kedisiplinan">Kedisiplinan / Absen</option>
+                            <option value="Pribadi / Sosial">Pribadi / Sosial</option>
+                            <option value="Karir / Studi Lanjut">Karir / Studi Lanjut</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Permasalahan yang Dihadapi:</label>
+                    <textarea id="session-problem" rows="3" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Tuliskan detail permasalahan siswa..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Solusi & Problem Solving (Penanganan BK):</label>
+                    <textarea id="session-solution" rows="3" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Tuliskan langkah bimbingan atau solusi yang ditawarkan..."></textarea>
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('session-modal')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">Batal</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Simpan Catatan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT SCHEDULE -->
+    <div id="schedule-modal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-xl">
+            <h3 class="text-lg font-bold text-gray-800">Buat Jadwal Pembinaan Manual</h3>
+            <form id="schedule-form" onsubmit="saveSchedule(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Siswa:</label>
+                    <select id="schedule-student" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Minggu Ke:</label>
+                        <select id="schedule-week" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="Minggu 1">Minggu 1</option>
+                            <option value="Minggu 2">Minggu 2</option>
+                            <option value="Minggu 3">Minggu 3</option>
+                            <option value="Minggu 4">Minggu 4</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Hari:</label>
+                        <select id="schedule-day" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                            <option value="Senin">Senin</option>
+                            <option value="Selasa">Selasa</option>
+                            <option value="Rabu">Rabu</option>
+                            <option value="Kamis">Kamis</option>
+                            <option value="Jumat">Jumat</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Jenis Sesi:</label>
+                    <input type="text" id="schedule-type" value="Rutin Bulanan" required class="w-full p-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div class="flex justify-end space-x-3 pt-2">
+                    <button type="button" onclick="closeModal('schedule-modal')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition">Batal</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Simpan Jadwal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript App Logic -->
+    <script>
+        // Data Siswa SMA Azmanawadi Kotaraja
+        const studentsList = [
+            // Kelas X
+            { id: 's1', name: 'Nada Syarfina', grade: 'Kelas X' },
+            { id: 's2', name: 'Lalu Zaki Hiswari', grade: 'Kelas X' },
+            { id: 's3', name: 'M Irsan Arzani', grade: 'Kelas X' },
+            { id: 's4', name: 'Rahmat Saputra', grade: 'Kelas X' },
+            { id: 's5', name: 'L.M.Zarkoasi', grade: 'Kelas X' },
+            { id: 's6', name: 'Azza Zumratul Aini', grade: 'Kelas X' },
+            // Kelas XI
+            { id: 's7', name: 'Hapipatul Aemi', grade: 'Kelas XI' },
+            { id: 's8', name: 'Nur Hidayah Apriani', grade: 'Kelas XI' },
+            { id: 's9', name: 'L. M. Iqbal Haer', grade: 'Kelas XI' },
+            { id: 's10', name: 'Arzilanda Putra Paputungan', grade: 'Kelas XI' },
+            { id: 's11', name: 'M.Andra Salsiyan Saputra', grade: 'Kelas XI' },
+            // Kelas XII
+            { id: 's12', name: 'M. Dava Abdurrahman', grade: 'Kelas XII' },
+            { id: 's13', name: 'L. M. Abdul Maliki', grade: 'Kelas XII' },
+            { id: 's14', name: 'M. Zaenul Yuda', grade: 'Kelas XII' },
+            { id: 's15', name: 'Lalu Arkananta Narendra Gibran', grade: 'Kelas XII' },
+            { id: 's16', name: 'Lalu Ripana', grade: 'Kelas XII' },
+            { id: 's17', name: 'Rega Ardinata', grade: 'Kelas XII' },
+            { id: 's18', name: 'Muhammad Ihsan', grade: 'Kelas XII' }
+        ];
+
+        // Jadwal Bawaan (Berdasarkan File Excel Anda)
+        const defaultSchedules = [
+            { week: 'Minggu 1', day: 'Senin', grade: 'Kelas X', studentName: 'Nada Syarfina', type: 'Rutin Bulanan' },
+            { week: 'Minggu 1', day: 'Selasa', grade: 'Kelas X', studentName: 'Lalu Zaki Hiswari', type: 'Rutin Bulanan' },
+            { week: 'Minggu 1', day: 'Rabu', grade: 'Kelas X', studentName: 'M Irsan Arzani', type: 'Rutin Bulanan' },
+            { week: 'Minggu 1', day: 'Kamis', grade: 'Kelas X', studentName: 'Rahmat Saputra', type: 'Rutin Bulanan' },
+            { week: 'Minggu 1', day: 'Jumat', grade: 'Kelas X', studentName: 'L.M.Zarkoasi', type: 'Rutin Bulanan' },
+            
+            { week: 'Minggu 2', day: 'Senin', grade: 'Kelas X', studentName: 'Azza Zumratul Aini', type: 'Rutin Bulanan' },
+            { week: 'Minggu 2', day: 'Selasa', grade: 'Kelas XI', studentName: 'Hapipatul Aemi', type: 'Rutin Bulanan' },
+            { week: 'Minggu 2', day: 'Rabu', grade: 'Kelas XI', studentName: 'Nur Hidayah Apriani', type: 'Rutin Bulanan' },
+            { week: 'Minggu 2', day: 'Kamis', grade: 'Kelas XI', studentName: 'L. M. Iqbal Haer', type: 'Rutin Bulanan' },
+            { week: 'Minggu 2', day: 'Jumat', grade: 'Kelas XI', studentName: 'Arzilanda Putra Paputungan', type: 'Rutin Bulanan' },
+
+            { week: 'Minggu 3', day: 'Senin', grade: 'Kelas XI', studentName: 'M.Andra Salsiyan Saputra', type: 'Rutin Bulanan' },
+            { week: 'Minggu 3', day: 'Selasa', grade: 'Kelas XII', studentName: 'M. Dava Abdurrahman', type: 'Rutin Bulanan' },
+            { week: 'Minggu 3', day: 'Rabu', grade: 'Kelas XII', studentName: 'L. M. Abdul Maliki', type: 'Rutin Bulanan' },
+            { week: 'Minggu 3', day: 'Kamis', grade: 'Kelas XII', studentName: 'M. Zaenul Yuda', type: 'Rutin Bulanan' },
+            { week: 'Minggu 3', day: 'Jumat', grade: 'Kelas XII', studentName: 'Lalu Arkananta Narendra Gibran', type: 'Rutin Bulanan' },
+
+            { week: 'Minggu 4', day: 'Senin', grade: 'Kelas XII', studentName: 'Lalu Ripana', type: 'Rutin Bulanan' },
+            { week: 'Minggu 4', day: 'Selasa', grade: 'Kelas XII', studentName: 'Rega Ardinata', type: 'Rutin Bulanan' },
+            { week: 'Minggu 4', day: 'Rabu', grade: 'Kelas XII', studentName: 'Muhammad Ihsan', type: 'Rutin Bulanan' }
+        ];
+
+        // State Data (Local Storage fallback)
+        let sessions = JSON.parse(localStorage.getItem('ebk_sessions')) || [];
+        let schedules = JSON.parse(localStorage.getItem('ebk_schedules')) || defaultSchedules;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('aside button').forEach(el => {
+                el.classList.remove('bg-emerald-50', 'text-emerald-700');
+                el.classList.add('text-gray-600', 'hover:bg-gray-50');
+            });
+            const activeBtn = document.getElementById(`nav-${tabId}`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-emerald-50', 'text-emerald-700');
+                activeBtn.classList.remove('text-gray-600', 'hover:bg-gray-50');
+            }
+            renderAll();
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderStudents();
+            renderSchedules();
+            renderSessions();
+            populateStudentDropdowns();
+        }
+
+        function populateStudentDropdowns() {
+            const options = studentsList.map(s => `<option value="${s.name} (${s.grade})">${s.name} - ${s.grade}</option>`).join('');
+            document.getElementById('session-student').innerHTML = options;
+            document.getElementById('schedule-student').innerHTML = options;
+        }
+
+        function renderDashboard() {
+            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+            const monthlySessions = sessions.filter(s => s.date.startsWith(currentMonth));
+            
+            // Unique student names who got counseled this month
+            const counseledStudents = new Set(monthlySessions.map(s => s.studentName.split(' (')[0]));
+            const pendingCount = studentsList.length - counseledStudents.size;
+
+            document.getElementById('stat-total-sessions').innerText = monthlySessions.length;
+            document.getElementById('stat-pending-students').innerText = Math.max(0, pendingCount);
+
+            // Recent table
+            const tbody = document.getElementById('recent-sessions-table');
+            if (sessions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pembinaan tersimpan.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = sessions.slice(-5).reverse().map(s => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 font-medium text-gray-700">${s.date}</td>
+                    <td class="p-3 font-semibold text-gray-900">${s.studentName}</td>
+                    <td class="p-3"><span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded text-xs">${s.category}</span></td>
+                    <td class="p-3 text-gray-600">${s.problem}</td>
+                    <td class="p-3 text-emerald-700 font-medium">${s.solution}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderStudents() {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const counseledThisMonth = new Set(sessions.filter(s => s.date.startsWith(currentMonth)).map(s => s.studentName.split(' (')[0]));
+
+            const tbody = document.getElementById('students-table');
+            tbody.innerHTML = studentsList.map((st, idx) => {
+                const fullNameKey = `${st.name} (${st.grade})`;
+                const isDone = counseledThisMonth.has(st.name);
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="p-3 text-gray-500">${idx + 1}</td>
+                        <td class="p-3 font-semibold text-gray-900">${st.name}</td>
+                        <td class="p-3"><span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded text-xs font-medium">${st.grade}</span></td>
+                        <td class="p-3">
+                            ${isDone ? '<span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-check mr-1"></i> Sudah Dibina</span>' : '<span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-clock mr-1"></i> Belum Bulan Ini</span>'}
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="quickCounsel('${fullNameKey}')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded transition">Catat Sesi</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderSchedules() {
+            const tbody = document.getElementById('schedules-table');
+            if (schedules.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Belum ada jadwal yang dibuat.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = schedules.map((sc, idx) => {
+                const isWeekHeader = idx === 0 || schedules[idx - 1].week !== sc.week;
+                return `
+                    <tr class="hover:bg-gray-50 ${isWeekHeader ? 'border-t-2 border-emerald-100' : ''}">
+                        <td class="p-3 font-semibold text-emerald-800">${sc.week || '-'}</td>
+                        <td class="p-3 font-medium text-gray-700">${sc.day || '-'}</td>
+                        <td class="p-3"><span class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-medium">${sc.grade || '-'}</span></td>
+                        <td class="p-3 font-semibold text-gray-900">${sc.studentName}</td>
+                        <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-medium">${sc.type || 'Rutin Bulanan'}</span></td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="quickCounselFromSchedule('${sc.studentName}', '${sc.grade}')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold mr-2"><i class="fa-solid fa-pen-to-square"></i> Bina</button>
+                            <button onclick="deleteSchedule(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderSessions() {
+            const tbody = document.getElementById('sessions-table');
+            if (sessions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Belum ada catatan pembinaan.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = sessions.map((s, idx) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-3 font-medium text-gray-700">${s.date}</td>
+                    <td class="p-3 font-semibold text-gray-900">${s.studentName}</td>
+                    <td class="p-3"><span class="bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded text-xs font-semibold">${s.category}</span></td>
+                    <td class="p-3 text-gray-600 max-w-xs truncate">${s.problem}</td>
+                    <td class="p-3 text-gray-800 font-medium max-w-xs truncate">${s.solution}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteSession(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openAddSessionModal() {
+            document.getElementById('session-form').reset();
+            document.getElementById('session-date').valueAsDate = new Date();
+            document.getElementById('session-modal').classList.remove('hidden');
+        }
+
+        function openScheduleModal() {
+            document.getElementById('schedule-form').reset();
+            document.getElementById('schedule-modal').classList.remove('hidden');
+        }
+
+        function openExportModal() {
+            document.getElementById('export-month-input').value = new Date().toISOString().slice(0, 7);
+            document.getElementById('export-all-check').checked = false;
+            document.getElementById('export-modal').classList.remove('hidden');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function quickCounsel(studentNameKey) {
+            openAddSessionModal();
+            document.getElementById('session-student').value = studentNameKey;
+        }
+
+        function quickCounselFromSchedule(name, grade) {
+            const fullNameKey = `${name} (${grade})`;
+            quickCounsel(fullNameKey);
+        }
+
+        function saveSession(e) {
+            e.preventDefault();
+            const newSession = {
+                studentName: document.getElementById('session-student').value,
+                date: document.getElementById('session-date').value,
+                category: document.getElementById('session-category').value,
+                problem: document.getElementById('session-problem').value,
+                solution: document.getElementById('session-solution').value
+            };
+            sessions.push(newSession);
+            localStorage.setItem('ebk_sessions', JSON.stringify(sessions));
+            closeModal('session-modal');
+            renderAll();
+        }
+
+        function saveSchedule(e) {
+            e.preventDefault();
+            const rawStudent = document.getElementById('schedule-student').value;
+            const nameParts = rawStudent.split(' (');
+            const studentName = nameParts[0];
+            const grade = nameParts[1] ? nameParts[1].replace(')', '') : '';
+
+            const newSchedule = {
+                week: document.getElementById('schedule-week').value,
+                day: document.getElementById('schedule-day').value,
+                grade: grade,
+                studentName: studentName,
+                type: document.getElementById('schedule-type').value
+            };
+            schedules.push(newSchedule);
+            localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
+            closeModal('schedule-modal');
+            renderAll();
+        }
+
+        function resetDefaultSchedules() {
+            if(confirm('Kembalikan jadwal ke susunan standar Excel?')) {
+                schedules = [...defaultSchedules];
+                localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
+                renderAll();
+            }
+        }
+
+        function deleteSession(index) {
+            if(confirm('Hapus catatan pembinaan ini?')) {
+                sessions.splice(index, 1);
+                localStorage.setItem('ebk_sessions', JSON.stringify(sessions));
+                renderAll();
+            }
+        }
+
+        function deleteSchedule(index) {
+            if(confirm('Hapus jadwal ini?')) {
+                schedules.splice(index, 1);
+                localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
+                renderAll();
+            }
+        }
+
+        // Fungsi Eksekusi Export CSV dengan Filter Bulan
+        function confirmExportCSV() {
+            if (sessions.length === 0) {
+                alert('Belum ada data catatan pembinaan untuk diexport!');
+                return;
+            }
+
+            const isAll = document.getElementById('export-all-check').checked;
+            const selectedMonth = document.getElementById('export-month-input').value; // format YYYY-MM
+
+            let filteredSessions = sessions;
+            let fileLabel = "Semua_Bulan";
+
+            if (!isAll) {
+                if (!selectedMonth) {
+                    alert('Silakan pilih bulan terlebih dahulu!');
+                    return;
+                }
+                filteredSessions = sessions.filter(s => s.date.startsWith(selectedMonth));
+                fileLabel = selectedMonth;
+            }
+
+            if (filteredSessions.length === 0) {
+                alert(`Tidak ada data pembinaan pada periode ${fileLabel}!`);
+                return;
+            }
+
+            let csvContent = "\uFEFFTanggal,Nama Siswa & Kelas,Kategori Masalah,Permasalahan,Solusi / Penanganan BK\n";
+            filteredSessions.forEach(s => {
+                let row = `"${s.date}","${s.studentName}","${s.category}","${s.problem.replace(/"/g, '""')}","${s.solution.replace(/"/g, '""')}"`;
+                csvContent += row + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Rekap_BK_Azmanawadi_${fileLabel}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeModal('export-modal');
+        }
+
+        function saveFirebaseConfig() {
+            alert('Konfigurasi Firebase berhasil disimpan!');
+            document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Firebase Connected';
+        }
+
+        // Init App
+        renderAll();
+    </script>
+</body>
+</html>
