@@ -30,7 +30,7 @@
             </div>
             <div class="flex items-center space-x-3">
                 <span id="firebase-status" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200 border border-emerald-600">
-                    <i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1 animate-pulse"></i> Mode Lokal (Hubungkan Firebase)
+                    <i class="fa-solid fa-circle text-[8px] text-amber-400 mr-1 animate-pulse"></i> Menghubungkan Firebase...
                 </span>
                 <button onclick="switchTab('dashboard')" class="bg-emerald-600 hover:bg-emerald-800 px-3 py-1.5 rounded-lg text-sm font-medium transition">
                     <i class="fa-solid fa-chart-pie mr-1"></i> Dashboard
@@ -58,7 +58,7 @@
                 <i class="fa-solid fa-file-lines w-5"></i> <span>Hasil Pembinaan</span>
             </button>
             <button onclick="switchTab('firebase-config')" id="nav-firebase-config" class="w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition flex items-center space-x-3 text-gray-600 hover:bg-gray-50">
-                <i class="fa-solid fa-database w-5"></i> <span>Setup Firebase</span>
+                <i class="fa-solid fa-database w-5"></i> <span>Info Firebase</span>
             </button>
         </aside>
 
@@ -119,7 +119,7 @@
                                 </tr>
                             </thead>
                             <tbody id="recent-sessions-table" class="divide-y divide-gray-100">
-                                <tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pembinaan tersimpan.</td></tr>
+                                <tr><td colspan="5" class="p-4 text-center text-gray-400">Memuat data dari Firebase...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -157,7 +157,7 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                     <div>
                         <h3 class="text-base font-bold text-gray-800">Jadwal Pembinaan / Konseling Siswa (Rutin Bulanan)</h3>
-                        <p class="text-xs text-gray-500 mt-0.5">Jadwal rutin mingguan untuk 18 siswa SMA Azmanawadi Kotaraja[cite: 1, 2].</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Jadwal rutin mingguan untuk 18 siswa SMA Azmanawadi Kotaraja.</p>
                     </div>
                     <div class="space-x-2">
                         <button onclick="resetDefaultSchedules()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-medium transition">
@@ -183,7 +183,7 @@
                                 </tr>
                             </thead>
                             <tbody id="schedules-table" class="divide-y divide-gray-100">
-                                <!-- Populated by JS -->
+                                <tr><td colspan="6" class="p-4 text-center text-gray-400">Memuat jadwal...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -228,23 +228,17 @@
                 </div>
             </div>
 
-            <!-- TAB 5: FIREBASE CONFIG -->
+            <!-- TAB 5: FIREBASE CONFIG INFO -->
             <div id="tab-firebase-config" class="space-y-6 tab-content hidden">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
                     <h3 class="text-base font-bold text-gray-800 flex items-center">
-                        <i class="fa-solid fa-database text-emerald-600 mr-2"></i> Konfigurasi Koneksi Firebase
+                        <i class="fa-solid fa-database text-emerald-600 mr-2"></i> Status Koneksi Firebase Cloud Firestore
                     </h3>
                     <p class="text-xs text-gray-600">
-                        Masukkan konfigurasi Firebase Anda (dari Firebase Console > Project Settings > General > Your Apps > Web App SDK). Data aplikasi akan otomatis tersimpan di Cloud Firestore sehingga bisa diakses secara online dari perangkat mana pun.
+                        Aplikasi Anda telah terhubung secara online ke project Firebase: <code class="bg-gray-100 px-2 py-0.5 rounded text-emerald-700 font-semibold">pembinaan-bk-azmanawadi</code>. Semua data pencatatan dan jadwal akan otomatis disinkronkan ke database *Cloud Firestore*.
                     </p>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-600 mb-1">Firebase Config JSON / Script Snippet:</label>
-                            <textarea id="firebase-config-input" rows="6" class="w-full p-3 border border-gray-200 rounded-lg text-xs font-mono focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Paste konfigurasi firebase di sini..."></textarea>
-                        </div>
-                        <button onclick="saveFirebaseConfig()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                            Simpan & Hubungkan Firebase
-                        </button>
+                    <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
+                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Online & Real-time Active:</strong> Anda dapat membuka halaman ini di beberapa perangkat sekaligus dan data akan selalu sama persis.
                     </div>
                 </div>
             </div>
@@ -362,24 +356,41 @@
         </div>
     </div>
 
-    <!-- JavaScript App Logic -->
-    <script>
+    <!-- Firebase SDK Modular Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyAdU1qt7-_bg4DTiFYYI2SjiXj5YP7PeBk",
+            authDomain: "pembinaan-bk-azmanawadi.firebaseapp.com",
+            projectId: "pembinaan-bk-azmanawadi",
+            storageBucket: "pembinaan-bk-azmanawadi.firebasestorage.app",
+            messagingSenderId: "967613443347",
+            appId: "1:967613443347:web:169f6cdf645725b6853ee6",
+            measurementId: "G-6ELRDECKYV"
+        };
+
+        // Inisialisasi Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+
         // Data Siswa SMA Azmanawadi Kotaraja
         const studentsList = [
-            // Kelas X
             { id: 's1', name: 'Nada Syarfina', grade: 'Kelas X' },
             { id: 's2', name: 'Lalu Zaki Hiswari', grade: 'Kelas X' },
             { id: 's3', name: 'M Irsan Arzani', grade: 'Kelas X' },
             { id: 's4', name: 'Rahmat Saputra', grade: 'Kelas X' },
             { id: 's5', name: 'L.M.Zarkoasi', grade: 'Kelas X' },
             { id: 's6', name: 'Azza Zumratul Aini', grade: 'Kelas X' },
-            // Kelas XI
             { id: 's7', name: 'Hapipatul Aemi', grade: 'Kelas XI' },
             { id: 's8', name: 'Nur Hidayah Apriani', grade: 'Kelas XI' },
             { id: 's9', name: 'L. M. Iqbal Haer', grade: 'Kelas XI' },
             { id: 's10', name: 'Arzilanda Putra Paputungan', grade: 'Kelas XI' },
             { id: 's11', name: 'M.Andra Salsiyan Saputra', grade: 'Kelas XI' },
-            // Kelas XII
             { id: 's12', name: 'M. Dava Abdurrahman', grade: 'Kelas XII' },
             { id: 's13', name: 'L. M. Abdul Maliki', grade: 'Kelas XII' },
             { id: 's14', name: 'M. Zaenul Yuda', grade: 'Kelas XII' },
@@ -389,36 +400,65 @@
             { id: 's18', name: 'Muhammad Ihsan', grade: 'Kelas XII' }
         ];
 
-        // Jadwal Bawaan (Berdasarkan File Excel Anda)
         const defaultSchedules = [
             { week: 'Minggu 1', day: 'Senin', grade: 'Kelas X', studentName: 'Nada Syarfina', type: 'Rutin Bulanan' },
             { week: 'Minggu 1', day: 'Selasa', grade: 'Kelas X', studentName: 'Lalu Zaki Hiswari', type: 'Rutin Bulanan' },
             { week: 'Minggu 1', day: 'Rabu', grade: 'Kelas X', studentName: 'M Irsan Arzani', type: 'Rutin Bulanan' },
             { week: 'Minggu 1', day: 'Kamis', grade: 'Kelas X', studentName: 'Rahmat Saputra', type: 'Rutin Bulanan' },
             { week: 'Minggu 1', day: 'Jumat', grade: 'Kelas X', studentName: 'L.M.Zarkoasi', type: 'Rutin Bulanan' },
-            
             { week: 'Minggu 2', day: 'Senin', grade: 'Kelas X', studentName: 'Azza Zumratul Aini', type: 'Rutin Bulanan' },
             { week: 'Minggu 2', day: 'Selasa', grade: 'Kelas XI', studentName: 'Hapipatul Aemi', type: 'Rutin Bulanan' },
             { week: 'Minggu 2', day: 'Rabu', grade: 'Kelas XI', studentName: 'Nur Hidayah Apriani', type: 'Rutin Bulanan' },
             { week: 'Minggu 2', day: 'Kamis', grade: 'Kelas XI', studentName: 'L. M. Iqbal Haer', type: 'Rutin Bulanan' },
             { week: 'Minggu 2', day: 'Jumat', grade: 'Kelas XI', studentName: 'Arzilanda Putra Paputungan', type: 'Rutin Bulanan' },
-
             { week: 'Minggu 3', day: 'Senin', grade: 'Kelas XI', studentName: 'M.Andra Salsiyan Saputra', type: 'Rutin Bulanan' },
             { week: 'Minggu 3', day: 'Selasa', grade: 'Kelas XII', studentName: 'M. Dava Abdurrahman', type: 'Rutin Bulanan' },
             { week: 'Minggu 3', day: 'Rabu', grade: 'Kelas XII', studentName: 'L. M. Abdul Maliki', type: 'Rutin Bulanan' },
             { week: 'Minggu 3', day: 'Kamis', grade: 'Kelas XII', studentName: 'M. Zaenul Yuda', type: 'Rutin Bulanan' },
             { week: 'Minggu 3', day: 'Jumat', grade: 'Kelas XII', studentName: 'Lalu Arkananta Narendra Gibran', type: 'Rutin Bulanan' },
-
             { week: 'Minggu 4', day: 'Senin', grade: 'Kelas XII', studentName: 'Lalu Ripana', type: 'Rutin Bulanan' },
             { week: 'Minggu 4', day: 'Selasa', grade: 'Kelas XII', studentName: 'Rega Ardinata', type: 'Rutin Bulanan' },
             { week: 'Minggu 4', day: 'Rabu', grade: 'Kelas XII', studentName: 'Muhammad Ihsan', type: 'Rutin Bulanan' }
         ];
 
-        // State Data (Local Storage fallback)
-        let sessions = JSON.parse(localStorage.getItem('ebk_sessions')) || [];
-        let schedules = JSON.parse(localStorage.getItem('ebk_schedules')) || defaultSchedules;
+        let sessions = [];
+        let schedules = [];
 
-        function switchTab(tabId) {
+        // Fetch Data from Firestore
+        async function loadDataFromFirebase() {
+            try {
+                // Fetch Sessions
+                const sessionSnapshot = await getDocs(collection(db, "sessions"));
+                sessions = [];
+                sessionSnapshot.forEach((docSnap) => {
+                    sessions.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Fetch Schedules
+                const scheduleSnapshot = await getDocs(collection(db, "schedules"));
+                schedules = [];
+                scheduleSnapshot.forEach((docSnap) => {
+                    schedules.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Jika schedule kosong di firebase, masukkan default excel
+                if (schedules.length === 0) {
+                    for (let item of defaultSchedules) {
+                        await addDoc(collection(db, "schedules"), item);
+                    }
+                    const res = await getDocs(collection(db, "schedules"));
+                    res.forEach(docSnap => schedules.push({ id: docSnap.id, ...docSnap.data() }));
+                }
+
+                document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Firebase Terhubung';
+                renderAll();
+            } catch (error) {
+                console.error("Error loading firebase data: ", error);
+                document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-red-400 mr-1"></i> Koneksi Gagal';
+            }
+        }
+
+        window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
@@ -449,17 +489,15 @@
         }
 
         function renderDashboard() {
-            const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-            const monthlySessions = sessions.filter(s => s.date.startsWith(currentMonth));
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthlySessions = sessions.filter(s => s.date && s.date.startsWith(currentMonth));
             
-            // Unique student names who got counseled this month
             const counseledStudents = new Set(monthlySessions.map(s => s.studentName.split(' (')[0]));
             const pendingCount = studentsList.length - counseledStudents.size;
 
             document.getElementById('stat-total-sessions').innerText = monthlySessions.length;
             document.getElementById('stat-pending-students').innerText = Math.max(0, pendingCount);
 
-            // Recent table
             const tbody = document.getElementById('recent-sessions-table');
             if (sessions.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400">Belum ada data pembinaan tersimpan.</td></tr>`;
@@ -478,7 +516,7 @@
 
         function renderStudents() {
             const currentMonth = new Date().toISOString().slice(0, 7);
-            const counseledThisMonth = new Set(sessions.filter(s => s.date.startsWith(currentMonth)).map(s => s.studentName.split(' (')[0]));
+            const counseledThisMonth = new Set(sessions.filter(s => s.date && s.date.startsWith(currentMonth)).map(s => s.studentName.split(' (')[0]));
 
             const tbody = document.getElementById('students-table');
             tbody.innerHTML = studentsList.map((st, idx) => {
@@ -493,7 +531,7 @@
                             ${isDone ? '<span class="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-check mr-1"></i> Sudah Dibina</span>' : '<span class="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-semibold"><i class="fa-solid fa-clock mr-1"></i> Belum Bulan Ini</span>'}
                         </td>
                         <td class="p-3 text-center">
-                            <button onclick="quickCounsel('${fullNameKey}')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded transition">Catat Sesi</button>
+                            <button onclick="window.quickCounsel('${fullNameKey}')" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded transition">Catat Sesi</button>
                         </td>
                     </tr>
                 `;
@@ -517,8 +555,8 @@
                         <td class="p-3 font-semibold text-gray-900">${sc.studentName}</td>
                         <td class="p-3"><span class="bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full text-xs font-medium">${sc.type || 'Rutin Bulanan'}</span></td>
                         <td class="p-3 text-center space-x-2">
-                            <button onclick="quickCounselFromSchedule('${sc.studentName}', '${sc.grade}')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold mr-2"><i class="fa-solid fa-pen-to-square"></i> Bina</button>
-                            <button onclick="deleteSchedule(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="window.quickCounselFromSchedule('${sc.studentName}', '${sc.grade}')" class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold mr-2"><i class="fa-solid fa-pen-to-square"></i> Bina</button>
+                            <button onclick="window.deleteSchedule('${sc.id}')" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
                         </td>
                     </tr>
                 `;
@@ -539,44 +577,45 @@
                     <td class="p-3 text-gray-600 max-w-xs truncate">${s.problem}</td>
                     <td class="p-3 text-gray-800 font-medium max-w-xs truncate">${s.solution}</td>
                     <td class="p-3 text-center">
-                        <button onclick="deleteSession(${idx})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="window.deleteSession('${s.id}')" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function openAddSessionModal() {
+        window.openAddSessionModal = function() {
             document.getElementById('session-form').reset();
             document.getElementById('session-date').valueAsDate = new Date();
             document.getElementById('session-modal').classList.remove('hidden');
         }
 
-        function openScheduleModal() {
+        window.openScheduleModal = function() {
             document.getElementById('schedule-form').reset();
             document.getElementById('schedule-modal').classList.remove('hidden');
         }
 
-        function openExportModal() {
+        window.openExportModal = function() {
             document.getElementById('export-month-input').value = new Date().toISOString().slice(0, 7);
             document.getElementById('export-all-check').checked = false;
             document.getElementById('export-modal').classList.remove('hidden');
         }
 
-        function closeModal(modalId) {
+        window.closeModal = function(modalId) {
             document.getElementById(modalId).classList.add('hidden');
         }
 
-        function quickCounsel(studentNameKey) {
-            openAddSessionModal();
+        window.quickCounsel = function(studentNameKey) {
+            window.openAddSessionModal();
             document.getElementById('session-student').value = studentNameKey;
         }
 
-        function quickCounselFromSchedule(name, grade) {
+        window.quickCounselFromSchedule = function(name, grade) {
             const fullNameKey = `${name} (${grade})`;
-            quickCounsel(fullNameKey);
+            window.quickCounsel(fullNameKey);
         }
 
-        function saveSession(e) {
+        // Simpan Hasil Sesi ke Firebase Firestore
+        window.saveSession = async function(e) {
             e.preventDefault();
             const newSession = {
                 studentName: document.getElementById('session-student').value,
@@ -585,13 +624,20 @@
                 problem: document.getElementById('session-problem').value,
                 solution: document.getElementById('session-solution').value
             };
-            sessions.push(newSession);
-            localStorage.setItem('ebk_sessions', JSON.stringify(sessions));
-            closeModal('session-modal');
-            renderAll();
+            
+            try {
+                await addDoc(collection(db, "sessions"), newSession);
+                window.closeModal('session-modal');
+                await loadDataFromFirebase();
+                alert('Catatan pembinaan berhasil disimpan ke Firebase!');
+            } catch (err) {
+                console.error("Error saving session: ", err);
+                alert('Gagal menyimpan ke Firebase.');
+            }
         }
 
-        function saveSchedule(e) {
+        // Simpan Jadwal ke Firebase Firestore
+        window.saveSchedule = async function(e) {
             e.preventDefault();
             const rawStudent = document.getElementById('schedule-student').value;
             const nameParts = rawStudent.split(' (');
@@ -605,45 +651,68 @@
                 studentName: studentName,
                 type: document.getElementById('schedule-type').value
             };
-            schedules.push(newSchedule);
-            localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
-            closeModal('schedule-modal');
-            renderAll();
+
+            try {
+                await addDoc(collection(db, "schedules"), newSchedule);
+                window.closeModal('schedule-modal');
+                await loadDataFromFirebase();
+                alert('Jadwal baru berhasil disimpan ke Firebase!');
+            } catch (err) {
+                console.error("Error saving schedule: ", err);
+                alert('Gagal menyimpan jadwal.');
+            }
         }
 
-        function resetDefaultSchedules() {
+        window.resetDefaultSchedules = async function() {
             if(confirm('Kembalikan jadwal ke susunan standar Excel?')) {
-                schedules = [...defaultSchedules];
-                localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
-                renderAll();
+                try {
+                    // Hapus semua schedule lama
+                    const snapshot = await getDocs(collection(db, "schedules"));
+                    for (let docSnap of snapshot.docs) {
+                        await deleteDoc(doc(db, "schedules", docSnap.id));
+                    }
+                    // Masukkan ulang default
+                    for (let item of defaultSchedules) {
+                        await addDoc(collection(db, "schedules"), item);
+                    }
+                    await loadDataFromFirebase();
+                    alert('Jadwal berhasil di-reset!');
+                } catch (err) {
+                    console.error("Error resetting schedule: ", err);
+                }
             }
         }
 
-        function deleteSession(index) {
+        window.deleteSession = async function(id) {
             if(confirm('Hapus catatan pembinaan ini?')) {
-                sessions.splice(index, 1);
-                localStorage.setItem('ebk_sessions', JSON.stringify(sessions));
-                renderAll();
+                try {
+                    await deleteDoc(doc(db, "sessions", id));
+                    await loadDataFromFirebase();
+                } catch (err) {
+                    console.error("Error deleting session: ", err);
+                }
             }
         }
 
-        function deleteSchedule(index) {
+        window.deleteSchedule = async function(id) {
             if(confirm('Hapus jadwal ini?')) {
-                schedules.splice(index, 1);
-                localStorage.setItem('ebk_schedules', JSON.stringify(schedules));
-                renderAll();
+                try {
+                    await deleteDoc(doc(db, "schedules", id));
+                    await loadDataFromFirebase();
+                } catch (err) {
+                    console.error("Error deleting schedule: ", err);
+                }
             }
         }
 
-        // Fungsi Eksekusi Export CSV dengan Filter Bulan
-        function confirmExportCSV() {
+        window.confirmExportCSV = function() {
             if (sessions.length === 0) {
                 alert('Belum ada data catatan pembinaan untuk diexport!');
                 return;
             }
 
             const isAll = document.getElementById('export-all-check').checked;
-            const selectedMonth = document.getElementById('export-month-input').value; // format YYYY-MM
+            const selectedMonth = document.getElementById('export-month-input').value;
 
             let filteredSessions = sessions;
             let fileLabel = "Semua_Bulan";
@@ -653,7 +722,7 @@
                     alert('Silakan pilih bulan terlebih dahulu!');
                     return;
                 }
-                filteredSessions = sessions.filter(s => s.date.startsWith(selectedMonth));
+                filteredSessions = sessions.filter(s => s.date && s.date.startsWith(selectedMonth));
                 fileLabel = selectedMonth;
             }
 
@@ -676,16 +745,11 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-            closeModal('export-modal');
+            window.closeModal('export-modal');
         }
 
-        function saveFirebaseConfig() {
-            alert('Konfigurasi Firebase berhasil disimpan!');
-            document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Firebase Connected';
-        }
-
-        // Init App
-        renderAll();
+        // Jalankan saat pertama kali dibuka
+        loadDataFromFirebase();
     </script>
 </body>
 </html>
