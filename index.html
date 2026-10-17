@@ -232,13 +232,13 @@
             <div id="tab-firebase-config" class="space-y-6 tab-content hidden">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-4">
                     <h3 class="text-base font-bold text-gray-800 flex items-center">
-                        <i class="fa-solid fa-database text-emerald-600 mr-2"></i> Status Koneksi Firebase Cloud Firestore
+                        <i class="fa-solid fa-database text-emerald-600 mr-2"></i> Status Koneksi Firebase Realtime Database
                     </h3>
                     <p class="text-xs text-gray-600">
-                        Aplikasi Anda telah terhubung secara online ke project Firebase: <code class="bg-gray-100 px-2 py-0.5 rounded text-emerald-700 font-semibold">pembinaan-bk-azmanawadi</code>. Semua data pencatatan dan jadwal akan otomatis disinkronkan ke database *Cloud Firestore*.
+                        Aplikasi Anda telah terhubung secara online ke Realtime Database: <code class="bg-gray-100 px-2 py-0.5 rounded text-emerald-700 font-semibold">pembinaan-bk-azmanawadi-default-rtdb</code>.
                     </p>
                     <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-xs">
-                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Online & Real-time Active:</strong> Anda dapat membuka halaman ini di beberapa perangkat sekaligus dan data akan selalu sama persis.
+                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Realtime Active:</strong> Semua perubahan data disimpan dan diperbarui secara langsung.
                     </div>
                 </div>
             </div>
@@ -356,16 +356,16 @@
         </div>
     </div>
 
-    <!-- Firebase SDK Modular Imports -->
+    <!-- Firebase Realtime Database SDK Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-        import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getDatabase, ref, onValue, push, remove, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         // Konfigurasi Firebase Anda
         const firebaseConfig = {
             apiKey: "AIzaSyAdU1qt7-_bg4DTiFYYI2SjiXj5YP7PeBk",
             authDomain: "pembinaan-bk-azmanawadi.firebaseapp.com",
+            databaseURL: "https://pembinaan-bk-azmanawadi-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "pembinaan-bk-azmanawadi",
             storageBucket: "pembinaan-bk-azmanawadi.firebasestorage.app",
             messagingSenderId: "967613443347",
@@ -373,12 +373,11 @@
             measurementId: "G-6ELRDECKYV"
         };
 
-        // Inisialisasi Firebase
+        // Initialize Firebase Realtime Database
         const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const db = getFirestore(app);
+        const db = getDatabase(app);
 
-        // Data Siswa SMA Azmanawadi Kotaraja
+        // Data Siswa
         const studentsList = [
             { id: 's1', name: 'Nada Syarfina', grade: 'Kelas X' },
             { id: 's2', name: 'Lalu Zaki Hiswari', grade: 'Kelas X' },
@@ -424,39 +423,35 @@
         let sessions = [];
         let schedules = [];
 
-        // Fetch Data from Firestore
-        async function loadDataFromFirebase() {
-            try {
-                // Fetch Sessions
-                const sessionSnapshot = await getDocs(collection(db, "sessions"));
-                sessions = [];
-                sessionSnapshot.forEach((docSnap) => {
-                    sessions.push({ id: docSnap.id, ...docSnap.data() });
+        // Realtime Listener Sessions
+        onValue(ref(db, 'sessions'), (snapshot) => {
+            sessions = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                Object.keys(data).forEach(key => {
+                    sessions.push({ id: key, ...data[key] });
                 });
-
-                // Fetch Schedules
-                const scheduleSnapshot = await getDocs(collection(db, "schedules"));
-                schedules = [];
-                scheduleSnapshot.forEach((docSnap) => {
-                    schedules.push({ id: docSnap.id, ...docSnap.data() });
-                });
-
-                // Jika schedule kosong di firebase, masukkan default excel
-                if (schedules.length === 0) {
-                    for (let item of defaultSchedules) {
-                        await addDoc(collection(db, "schedules"), item);
-                    }
-                    const res = await getDocs(collection(db, "schedules"));
-                    res.forEach(docSnap => schedules.push({ id: docSnap.id, ...docSnap.data() }));
-                }
-
-                document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Firebase Terhubung';
-                renderAll();
-            } catch (error) {
-                console.error("Error loading firebase data: ", error);
-                document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-red-400 mr-1"></i> Koneksi Gagal';
             }
-        }
+            renderAll();
+        });
+
+        // Realtime Listener Schedules
+        onValue(ref(db, 'schedules'), (snapshot) => {
+            schedules = [];
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                Object.keys(data).forEach(key => {
+                    schedules.push({ id: key, ...data[key] });
+                });
+            } else {
+                // Inisialisasi default schedule di Realtime DB
+                defaultSchedules.forEach(item => {
+                    push(ref(db, 'schedules'), item);
+                });
+            }
+            document.getElementById('firebase-status').innerHTML = '<i class="fa-solid fa-circle text-[8px] text-emerald-400 mr-1"></i> Realtime DB Terhubung';
+            renderAll();
+        });
 
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -614,7 +609,6 @@
             window.quickCounsel(fullNameKey);
         }
 
-        // Simpan Hasil Sesi ke Firebase Firestore
         window.saveSession = async function(e) {
             e.preventDefault();
             const newSession = {
@@ -626,17 +620,15 @@
             };
             
             try {
-                await addDoc(collection(db, "sessions"), newSession);
+                await push(ref(db, 'sessions'), newSession);
                 window.closeModal('session-modal');
-                await loadDataFromFirebase();
-                alert('Catatan pembinaan berhasil disimpan ke Firebase!');
+                alert('Catatan pembinaan berhasil disimpan ke Realtime Database!');
             } catch (err) {
                 console.error("Error saving session: ", err);
-                alert('Gagal menyimpan ke Firebase.');
+                alert('Gagal menyimpan: ' + err.message);
             }
         }
 
-        // Simpan Jadwal ke Firebase Firestore
         window.saveSchedule = async function(e) {
             e.preventDefault();
             const rawStudent = document.getElementById('schedule-student').value;
@@ -653,29 +645,22 @@
             };
 
             try {
-                await addDoc(collection(db, "schedules"), newSchedule);
+                await push(ref(db, 'schedules'), newSchedule);
                 window.closeModal('schedule-modal');
-                await loadDataFromFirebase();
-                alert('Jadwal baru berhasil disimpan ke Firebase!');
+                alert('Jadwal baru berhasil disimpan!');
             } catch (err) {
                 console.error("Error saving schedule: ", err);
-                alert('Gagal menyimpan jadwal.');
+                alert('Gagal menyimpan jadwal: ' + err.message);
             }
         }
 
         window.resetDefaultSchedules = async function() {
             if(confirm('Kembalikan jadwal ke susunan standar Excel?')) {
                 try {
-                    // Hapus semua schedule lama
-                    const snapshot = await getDocs(collection(db, "schedules"));
-                    for (let docSnap of snapshot.docs) {
-                        await deleteDoc(doc(db, "schedules", docSnap.id));
-                    }
-                    // Masukkan ulang default
-                    for (let item of defaultSchedules) {
-                        await addDoc(collection(db, "schedules"), item);
-                    }
-                    await loadDataFromFirebase();
+                    await remove(ref(db, 'schedules'));
+                    defaultSchedules.forEach(async (item) => {
+                        await push(ref(db, 'schedules'), item);
+                    });
                     alert('Jadwal berhasil di-reset!');
                 } catch (err) {
                     console.error("Error resetting schedule: ", err);
@@ -686,8 +671,7 @@
         window.deleteSession = async function(id) {
             if(confirm('Hapus catatan pembinaan ini?')) {
                 try {
-                    await deleteDoc(doc(db, "sessions", id));
-                    await loadDataFromFirebase();
+                    await remove(ref(db, `sessions/${id}`));
                 } catch (err) {
                     console.error("Error deleting session: ", err);
                 }
@@ -697,8 +681,7 @@
         window.deleteSchedule = async function(id) {
             if(confirm('Hapus jadwal ini?')) {
                 try {
-                    await deleteDoc(doc(db, "schedules", id));
-                    await loadDataFromFirebase();
+                    await remove(ref(db, `schedules/${id}`));
                 } catch (err) {
                     console.error("Error deleting schedule: ", err);
                 }
@@ -747,9 +730,6 @@
             document.body.removeChild(a);
             window.closeModal('export-modal');
         }
-
-        // Jalankan saat pertama kali dibuka
-        loadDataFromFirebase();
     </script>
 </body>
 </html>
